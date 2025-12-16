@@ -1,0 +1,671 @@
+{
+  "general_stats": {
+    "total_documents": 1189,
+    "total_entities": 35643,
+    "documents_with_entities": 1185,
+    "documents_without_entities": 4,
+    "avg_entities_per_doc": 29.98,
+    "entity_type_distribution": {
+      "FAC": 832,
+      "GPE": 3598,
+      "DATE": 4854,
+      "ORDINAL": 1116,
+      "CARDINAL": 3712,
+      "ORG": 4685,
+      "PERSON": 9081,
+      "LOC": 686,
+      "EVENT": 527,
+      "NORP": 2115,
+      "QUANTITY": 1194,
+      "MONEY": 274,
+      "TIME": 229,
+      "PRODUCT": 532,
+      "WORK_OF_ART": 1807,
+      "PERCENT": 221,
+      "LANGUAGE": 80,
+      "LAW": 100
+    }
+  },
+  "type_stats": {
+    "FAC": {
+      "total_occurrences": 832,
+      "unique_entities": 557,
+      "avg_length": 16.0,
+      "most_frequent": {
+        "route 4": 38,
+        "the tower building": 15,
+        "us 1": 10,
+        "route 2": 9,
+        "the little rock arsenal": 8,
+        "praška street": 8,
+        "the coldrum stones": 7,
+        "arsenal": 6,
+        "n @-@ 88": 6,
+        "route 403": 6
+      }
+    },
+    "GPE": {
+      "total_occurrences": 3598,
+      "unique_entities": 1057,
+      "avg_length": 8.77,
+      "most_frequent": {
+        "sarnia": 104,
+        "galveston": 101,
+        "the united states": 92,
+        "lock haven": 63,
+        "uk": 59,
+        "london": 54,
+        "india": 53,
+        "britain": 51,
+        "israel": 50,
+        "canada": 45
+      }
+    },
+    "DATE": {
+      "total_occurrences": 4854,
+      "unique_entities": 2280,
+      "avg_length": 9.66,
+      "most_frequent": {
+        "2008": 64,
+        "2007": 62,
+        "2010": 62,
+        "2012": 56,
+        "2009": 48,
+        "2003": 45,
+        "2013": 42,
+        "2006": 41,
+        "2011": 40,
+        "2005": 37
+      }
+    },
+    "ORDINAL": {
+      "total_occurrences": 1116,
+      "unique_entities": 85,
+      "avg_length": 5.23,
+      "most_frequent": {
+        "first": 488,
+        "second": 209,
+        "third": 89,
+        "fourth": 44,
+        "fifth": 37,
+        "seventh": 25,
+        "sixth": 25,
+        "ninth": 21,
+        "secondary": 10,
+        "eighth": 9
+      }
+    },
+    "CARDINAL": {
+      "total_occurrences": 3712,
+      "unique_entities": 489,
+      "avg_length": 3.28,
+      "most_frequent": {
+        "two": 484,
+        "one": 344,
+        "three": 240,
+        "four": 181,
+        "1": 119,
+        "3": 107,
+        "2": 107,
+        "five": 99,
+        "six": 93,
+        "4": 86
+      }
+    },
+    "ORG": {
+      "total_occurrences": 4685,
+      "unique_entities": 2442,
+      "avg_length": 14.79,
+      "most_frequent": {
+        "ga": 82,
+        "york": 81,
+        "church": 76,
+        "nba": 67,
+        "bulls": 50,
+        "nhl": 48,
+        "columbus": 36,
+        "the blue jackets": 35,
+        "nbc": 27,
+        "snl": 27
+      }
+    },
+    "PERSON": {
+      "total_occurrences": 9081,
+      "unique_entities": 3556,
+      "avg_length": 8.69,
+      "most_frequent": {
+        "jordan": 226,
+        "wheeler": 196,
+        "rachel": 168,
+        "white": 144,
+        "nicole": 140,
+        "ross": 136,
+        "finkelstein": 119,
+        "fey": 118,
+        "townsend": 118,
+        "zhou": 115
+      }
+    },
+    "LOC": {
+      "total_occurrences": 686,
+      "unique_entities": 365,
+      "avg_length": 12.67,
+      "most_frequent": {
+        "europe": 52,
+        "north america": 20,
+        "africa": 17,
+        "lake huron": 12,
+        "bald eagle creek": 11,
+        "asia": 9,
+        "earth": 8,
+        "galveston island": 8,
+        "mediterranean": 7,
+        "nile": 7
+      }
+    },
+    "EVENT": {
+      "total_occurrences": 527,
+      "unique_entities": 303,
+      "avg_length": 16.3,
+      "most_frequent": {
+        "world war ii": 41,
+        "world war i": 18,
+        "holocaust": 18,
+        "omar": 18,
+        "finals": 15,
+        "all @-@ star game": 7,
+        "the civil war": 6,
+        "the second world war": 6,
+        "cup": 6,
+        "the american civil war": 5
+      }
+    },
+    "NORP": {
+      "total_occurrences": 2115,
+      "unique_entities": 373,
+      "avg_length": 7.35,
+      "most_frequent": {
+        "german": 129,
+        "polish": 127,
+        "british": 120,
+        "american": 84,
+        "egyptian": 72,
+        "french": 72,
+        "jewish": 61,
+        "indian": 46,
+        "soviet": 37,
+        "roman": 31
+      }
+    },
+    "QUANTITY": {
+      "total_occurrences": 1194,
+      "unique_entities": 1067,
+      "avg_length": 11.61,
+      "most_frequent": {
+        "15 @-@ inch": 4,
+        "8 @-@ inch": 4,
+        "15 cm": 4,
+        "24 cm": 3,
+        "18 in": 3,
+        "12 m": 3,
+        "6 @.@ 4 @-@ inch": 3,
+        "2 @.@ 4 km": 3,
+        "15 metres": 3,
+        "6 m": 3
+      }
+    },
+    "MONEY": {
+      "total_occurrences": 274,
+      "unique_entities": 219,
+      "avg_length": 11.06,
+      "most_frequent": {
+        "three @-@ dollar": 7,
+        "$ 30": 4,
+        "one @-@ dollar": 4,
+        "a gold dollar": 3,
+        "$ 1 @.@": 3,
+        "$ 5": 3,
+        "$ 5 million": 3,
+        "$ 55 million": 3,
+        "800 million baht": 3,
+        "$ 25 million": 3
+      }
+    },
+    "TIME": {
+      "total_occurrences": 229,
+      "unique_entities": 184,
+      "avg_length": 13.87,
+      "most_frequent": {
+        "the night": 7,
+        "hours": 6,
+        "night": 5,
+        "hour": 5,
+        "the following morning": 4,
+        "evening": 3,
+        "24 hours": 3,
+        "half @-@ hour": 3,
+        "1 @.@ 8 seconds": 2,
+        "morning": 2
+      }
+    },
+    "PRODUCT": {
+      "total_occurrences": 532,
+      "unique_entities": 300,
+      "avg_length": 9.59,
+      "most_frequent": {
+        "markgraf": 34,
+        "the ns @-@ 10": 18,
+        "mitchells": 15,
+        "zrínyi": 12,
+        "hemmema": 11,
+        "rachel": 10,
+        "vasco da gama": 9,
+        "beaufighters": 7,
+        "hemmemas": 7,
+        "fingal": 6
+      }
+    },
+    "WORK_OF_ART": {
+      "total_occurrences": 1807,
+      "unique_entities": 1075,
+      "avg_length": 18.03,
+      "most_frequent": {
+        "friends": 53,
+        "sholay": 45,
+        "wrapped in red": 33,
+        "loose": 23,
+        "south of heaven": 19,
+        "catechism": 16,
+        "of human feelings": 16,
+        "the story of yue fei": 16,
+        "the crab with the golden claws": 16,
+        "30 rock": 15
+      }
+    },
+    "PERCENT": {
+      "total_occurrences": 221,
+      "unique_entities": 177,
+      "avg_length": 8.44,
+      "most_frequent": {
+        "5 %": 7,
+        "1 %": 5,
+        "30 %": 4,
+        "50 %": 4,
+        "94 %": 3,
+        "20 %": 3,
+        "14 %": 3,
+        "95 %": 3,
+        "68 %": 3,
+        "13 %": 3
+      }
+    },
+    "LANGUAGE": {
+      "total_occurrences": 80,
+      "unique_entities": 23,
+      "avg_length": 6.71,
+      "most_frequent": {
+        "polish": 16,
+        "english": 14,
+        "spanish": 11,
+        "french": 7,
+        "hindi": 5,
+        "ukrainian": 3,
+        "latin": 3,
+        "hebrew": 2,
+        "telugu": 2,
+        "belorussian": 2
+      }
+    },
+    "LAW": {
+      "total_occurrences": 100,
+      "unique_entities": 58,
+      "avg_length": 22.18,
+      "most_frequent": {
+        "catechism": 25,
+        "the seventeenth amendment": 7,
+        "the chicago manual of style": 4,
+        "the fourteenth and seventeenth amendments": 3,
+        "the united states constitution": 2,
+        "the treaty of versailles": 2,
+        "the ten commandments": 2,
+        "the catechism of the catholic church": 2,
+        "the treaty of bucharest": 2,
+        "the oxford style manual": 2
+      }
+    }
+  },
+  "frequent_stats": {
+    "most_frequent_all_types": {
+      "first": 488,
+      "two": 487,
+      "one": 345,
+      "three": 241,
+      "jordan": 231,
+      "second": 210,
+      "wheeler": 197,
+      "four": 183,
+      "rachel": 178,
+      "white": 151,
+      "polish": 143,
+      "nicole": 140,
+      "ross": 136,
+      "german": 129,
+      "british": 120,
+      "1": 119,
+      "finkelstein": 119,
+      "fey": 118,
+      "townsend": 118,
+      "zhou": 115,
+      "3": 108,
+      "2": 107,
+      "sarnia": 105,
+      "galveston": 102,
+      "five": 100,
+      "black": 97,
+      "six": 94,
+      "the united states": 92,
+      "nathan": 91,
+      "third": 89
+    },
+    "most_frequent_by_type": {
+      "FAC": {
+        "route 4": 38,
+        "the tower building": 15,
+        "us 1": 10,
+        "route 2": 9,
+        "the little rock arsenal": 8,
+        "praška street": 8,
+        "the coldrum stones": 7,
+        "arsenal": 6,
+        "n @-@ 88": 6,
+        "route 403": 6
+      },
+      "GPE": {
+        "sarnia": 104,
+        "galveston": 101,
+        "the united states": 92,
+        "lock haven": 63,
+        "uk": 59,
+        "london": 54,
+        "india": 53,
+        "britain": 51,
+        "israel": 50,
+        "canada": 45
+      },
+      "DATE": {
+        "2008": 64,
+        "2007": 62,
+        "2010": 62,
+        "2012": 56,
+        "2009": 48,
+        "2003": 45,
+        "2013": 42,
+        "2006": 41,
+        "2011": 40,
+        "2005": 37
+      },
+      "ORDINAL": {
+        "first": 488,
+        "second": 209,
+        "third": 89,
+        "fourth": 44,
+        "fifth": 37,
+        "seventh": 25,
+        "sixth": 25,
+        "ninth": 21,
+        "secondary": 10,
+        "eighth": 9
+      },
+      "CARDINAL": {
+        "two": 484,
+        "one": 344,
+        "three": 240,
+        "four": 181,
+        "1": 119,
+        "3": 107,
+        "2": 107,
+        "five": 99,
+        "six": 93,
+        "4": 86
+      },
+      "ORG": {
+        "ga": 82,
+        "york": 81,
+        "church": 76,
+        "nba": 67,
+        "bulls": 50,
+        "nhl": 48,
+        "columbus": 36,
+        "the blue jackets": 35,
+        "nbc": 27,
+        "snl": 27
+      },
+      "PERSON": {
+        "jordan": 226,
+        "wheeler": 196,
+        "rachel": 168,
+        "white": 144,
+        "nicole": 140,
+        "ross": 136,
+        "finkelstein": 119,
+        "fey": 118,
+        "townsend": 118,
+        "zhou": 115
+      },
+      "LOC": {
+        "europe": 52,
+        "north america": 20,
+        "africa": 17,
+        "lake huron": 12,
+        "bald eagle creek": 11,
+        "asia": 9,
+        "earth": 8,
+        "galveston island": 8,
+        "mediterranean": 7,
+        "nile": 7
+      },
+      "EVENT": {
+        "world war ii": 41,
+        "world war i": 18,
+        "holocaust": 18,
+        "omar": 18,
+        "finals": 15,
+        "all @-@ star game": 7,
+        "the civil war": 6,
+        "the second world war": 6,
+        "cup": 6,
+        "the american civil war": 5
+      },
+      "NORP": {
+        "german": 129,
+        "polish": 127,
+        "british": 120,
+        "american": 84,
+        "egyptian": 72,
+        "french": 72,
+        "jewish": 61,
+        "indian": 46,
+        "soviet": 37,
+        "roman": 31
+      },
+      "QUANTITY": {
+        "15 @-@ inch": 4,
+        "8 @-@ inch": 4,
+        "15 cm": 4,
+        "24 cm": 3,
+        "18 in": 3,
+        "12 m": 3,
+        "6 @.@ 4 @-@ inch": 3,
+        "2 @.@ 4 km": 3,
+        "15 metres": 3,
+        "6 m": 3
+      },
+      "MONEY": {
+        "three @-@ dollar": 7,
+        "$ 30": 4,
+        "one @-@ dollar": 4,
+        "a gold dollar": 3,
+        "$ 1 @.@": 3,
+        "$ 5": 3,
+        "$ 5 million": 3,
+        "$ 55 million": 3,
+        "800 million baht": 3,
+        "$ 25 million": 3
+      },
+      "TIME": {
+        "the night": 7,
+        "hours": 6,
+        "night": 5,
+        "hour": 5,
+        "the following morning": 4,
+        "evening": 3,
+        "24 hours": 3,
+        "half @-@ hour": 3,
+        "1 @.@ 8 seconds": 2,
+        "morning": 2
+      },
+      "PRODUCT": {
+        "markgraf": 34,
+        "the ns @-@ 10": 18,
+        "mitchells": 15,
+        "zrínyi": 12,
+        "hemmema": 11,
+        "rachel": 10,
+        "vasco da gama": 9,
+        "beaufighters": 7,
+        "hemmemas": 7,
+        "fingal": 6
+      },
+      "WORK_OF_ART": {
+        "friends": 53,
+        "sholay": 45,
+        "wrapped in red": 33,
+        "loose": 23,
+        "south of heaven": 19,
+        "catechism": 16,
+        "of human feelings": 16,
+        "the story of yue fei": 16,
+        "the crab with the golden claws": 16,
+        "30 rock": 15
+      },
+      "PERCENT": {
+        "5 %": 7,
+        "1 %": 5,
+        "30 %": 4,
+        "50 %": 4,
+        "94 %": 3,
+        "20 %": 3,
+        "14 %": 3,
+        "95 %": 3,
+        "68 %": 3,
+        "13 %": 3
+      },
+      "LANGUAGE": {
+        "polish": 16,
+        "english": 14,
+        "spanish": 11,
+        "french": 7,
+        "hindi": 5,
+        "ukrainian": 3,
+        "latin": 3,
+        "hebrew": 2,
+        "telugu": 2,
+        "belorussian": 2
+      },
+      "LAW": {
+        "catechism": 25,
+        "the seventeenth amendment": 7,
+        "the chicago manual of style": 4,
+        "the fourteenth and seventeenth amendments": 3,
+        "the united states constitution": 2,
+        "the treaty of versailles": 2,
+        "the ten commandments": 2,
+        "the catechism of the catholic church": 2,
+        "the treaty of bucharest": 2,
+        "the oxford style manual": 2
+      }
+    },
+    "top_co_occurrences": [
+      [
+        "ga (ORG) & ga (ORG)",
+        103
+      ],
+      [
+        "egyptian (NORP) & egyptian (NORP)",
+        65
+      ],
+      [
+        "church (ORG) & church (ORG)",
+        56
+      ],
+      [
+        "egyptian (NORP) & egyptians (NORP)",
+        54
+      ],
+      [
+        "ga (ORG) & uk (GPE)",
+        46
+      ],
+      [
+        "parvati (PERSON) & shiva (PERSON)",
+        45
+      ],
+      [
+        "one (CARDINAL) & two (CARDINAL)",
+        43
+      ],
+      [
+        "caa (ORG) & ga (ORG)",
+        40
+      ],
+      [
+        "shiva (PERSON) & shiva (PERSON)",
+        39
+      ],
+      [
+        "ali (PERSON) & ali (PERSON)",
+        37
+      ],
+      [
+        "catechism (LAW) & church (ORG)",
+        37
+      ],
+      [
+        "black (PERSON) & white (PERSON)",
+        35
+      ],
+      [
+        "egypt (GPE) & egyptian (NORP)",
+        34
+      ],
+      [
+        "trujillo (PERSON) & trujillo (PERSON)",
+        30
+      ],
+      [
+        "shiva (PERSON) & two (CARDINAL)",
+        30
+      ],
+      [
+        "two (CARDINAL) & two (CARDINAL)",
+        29
+      ],
+      [
+        "furtado (PERSON) & furtado (PERSON)",
+        28
+      ],
+      [
+        "trujillo (PERSON) & vargas llosa (PERSON)",
+        24
+      ],
+      [
+        "church (ORG) & two (CARDINAL)",
+        24
+      ],
+      [
+        "catechism (WORK_OF_ART) & church (ORG)",
+        23
+      ]
+    ]
+  }
+}
