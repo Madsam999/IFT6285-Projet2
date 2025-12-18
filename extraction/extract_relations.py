@@ -76,16 +76,25 @@ def extract_relations_from_jsonl(input_file: str, output_file: str,
             # Extraire les entités normalisées (pour référence et parsing des relations)
             normalized_entities = extractor.normalize_entities(doc)
             
-            # Enrichir les relations JOB_TITLE avec les entités PERSON trouvées
+            # Enrichir les relations OCCUPATION avec les entités PERSON trouvées
             # Cela permettra un meilleur parsing dans l'export CSV
             for rel in relations:
-                if rel.get('type') in ['JOB_TITLE', 'JOB_TITLE_APPOSITION']:
+                if rel.get('type') in ['OCCUPATION', 'OCCUPATION_APPOSITION', 'JOB_TITLE', 'JOB_TITLE_APPOSITION']:
                     rel_text = rel.get('text', '')
+                    # Filtrer les relations invalides
+                    if not rel_text or len(rel_text.strip()) < 3:
+                        continue
+                    # Rejeter si contient des caractères bizarres
+                    if any(char in rel_text for char in ['>', '<', '|', '&', 'unk', 'unknown']):
+                        continue
+                    
                     # Chercher les entités PERSON dans le texte de la relation
                     for ent in normalized_entities:
-                        if ent.get('label') == 'PERSON' and ent.get('text') in rel_text:
-                            rel['person_entity'] = ent.get('text')
-                            break
+                        if ent.get('label') == 'PERSON':
+                            person_text = ent.get('text', '')
+                            if person_text and person_text in rel_text:
+                                rel['person_entity'] = person_text
+                                break
             
             # Sauvegarder seulement si on a trouvé quelque chose
             if relations or acronyms:

@@ -70,30 +70,83 @@ class InformationExtractor:
         return f"Unknown source ... {span.text}"
 
     def _extract_job_titles_dependency(self, doc):
+        """
+        Extrait les relations personne-occupation.
+        
+        OCCUPATION: Titre/occupation avant le nom (ex: "General Douglas MacArthur")
+        OCCUPATION_APPOSITION: Nom suivi d'une apposition avec le titre (ex: "Douglas MacArthur, general")
+        """
         titles = []
+        # Mots à exclure (ne sont pas des titres/occupations)
+        excluded_words = {'the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 
+                         '>', '<', 'unk', 'unknown', "'", '"', '&', '|'}
+        
         for ent in doc.ents:
             if ent.label_ == "PERSON":
-                # Pre-nominal
+                person_text = ent.text.strip()
+                # Ignorer les entités PERSON trop courtes ou invalides
+                if len(person_text) < 2 or person_text.lower() in excluded_words:
+                    continue
+                
+                # Pre-nominal: Titre avant le nom (ex: "General Douglas MacArthur")
                 title_tokens = []
                 valid_heads = set(range(ent.start, ent.end))
                 idx = ent.start - 1
-                while idx >= 0:
+                max_title_tokens = 5  # Limiter la longueur du titre
+                
+                while idx >= 0 and len(title_tokens) < max_title_tokens:
                     token = doc[idx]
-                    if token.is_sent_start: break
+                    if token.is_sent_start:
+                        break
+                    # Vérifier que le token n'est pas un mot exclu
+                    if token.text.lower() in excluded_words:
+                        break
+                    # Vérifier les dépendances valides
                     if token.head.i in valid_heads and token.dep_ in ["compound", "amod", "nmod"]:
                         title_tokens.insert(0, token.text)
                         valid_heads.add(token.i)
-                    else: break
+                    else:
+                        break
                     idx -= 1
-                if title_tokens and len(" ".join(title_tokens)) > 2:
-                    titles.append({"type": "JOB_TITLE", "text": f"{' '.join(title_tokens)} {ent.text}"})
+                
+                # Filtrer: le titre doit avoir au moins 2 caractères et ne pas être juste de la ponctuation
+                if title_tokens:
+                    title_text = " ".join(title_tokens)
+                    # Nettoyer et valider
+                    title_clean = title_text.strip()
+                    if len(title_clean) > 2 and not all(c in ".,;:!?()[]{}<>" for c in title_clean):
+                        # Vérifier que ce n'est pas juste des caractères spéciaux
+                        if any(c.isalnum() for c in title_clean):
+                            titles.append({"type": "OCCUPATION", "text": f"{title_text} {person_text}"})
 
-                # Post-nominal
+                # Post-nominal: Apposition (ex: "Douglas MacArthur, general")
                 for child in ent.root.children:
                     if child.dep_ == "appos":
                         appos_span = doc[child.left_edge.i : child.right_edge.i + 1]
+                        appos_text = appos_span.text.strip()
+                        
+                        # Filtrer les appositions invalides
+                        if len(appos_text) < 2:
+                            continue
+                        if appos_text.lower() in excluded_words:
+                            continue
+                        # Rejeter si contient des caractères bizarres
+                        if any(char in appos_text for char in ['>', '<', '|', '&']):
+                            continue
+                        # Rejeter si trop long (probablement pas un titre)
+                        if len(appos_text) > 100:
+                            continue
+                        # Vérifier qu'il y a au moins un NOUN ou PROPN
                         if any(t.pos_ in ["NOUN", "PROPN"] for t in appos_span):
-                             titles.append({"type": "JOB_TITLE_APPOSITION", "text": f"{ent.text}, {appos_span.text}"})
+                            # Vérifier que ce n'est pas juste une liste de noms propres
+                            # (ex: "Neal Magic Johnson LeBron James" n'est pas un titre)
+                            nouns = [t for t in appos_span if t.pos_ in ["NOUN", "PROPN"]]
+                            # Si plus de 3 noms propres, probablement une liste, pas un titre
+                            if len([t for t in nouns if t.pos_ == "PROPN"]) > 3:
+                                continue
+                            
+                            titles.append({"type": "OCCUPATION_APPOSITION", "text": f"{person_text}, {appos_text}"})
+        
         return titles
 
     def _extract_acronyms(self, doc):

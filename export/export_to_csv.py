@@ -127,35 +127,74 @@ def export_relations_to_csv(input_file: str, output_file: str):
             rel_type = rel.get('type', 'UNKNOWN')
             rel_text = rel.get('text', '')
             
-            if rel_type in ['JOB_TITLE', 'JOB_TITLE_APPOSITION']:
+            # Normaliser les anciens noms vers les nouveaux
+            if rel_type in ['JOB_TITLE', 'OCCUPATION']:
+                rel_type = 'OCCUPATION'
+            elif rel_type in ['JOB_TITLE_APPOSITION', 'OCCUPATION_APPOSITION']:
+                rel_type = 'OCCUPATION_APPOSITION'
+            
+            if rel_type in ['OCCUPATION', 'OCCUPATION_APPOSITION']:
+                # Filtrer les relations invalides
+                if not rel_text or len(rel_text.strip()) < 3:
+                    continue
+                # Rejeter si contient des caractères bizarres ou mots exclus
+                excluded = ['>', '<', 'unk', 'unknown', '|', '&']
+                if any(exc in rel_text.lower() for exc in excluded):
+                    continue
+                # Rejeter si trop court après nettoyage
+                import re
+                cleaned = re.sub(r'[^\w\s]', '', rel_text).strip()
+                if len(cleaned) < 3:
+                    continue
+                
                 # Vérifier si person_entity est déjà extraite dans la relation
                 person_name = rel.get('person_entity')
                 
                 if person_name:
-                    # Extraire le titre (tout sauf le nom de la personne)
-                    import re
-                    job_title = rel_text.replace(person_name, '').strip()
+                    # Extraire le titre selon le type de relation
+                    if rel_type == 'OCCUPATION_APPOSITION':
+                        # Format: "Name, Title" - le titre est après la virgule
+                        if ',' in rel_text:
+                            parts = rel_text.split(',', 1)
+                            if len(parts) == 2:
+                                # Vérifier que la première partie contient le nom
+                                if person_name in parts[0]:
+                                    job_title = parts[1].strip()
+                                else:
+                                    # Fallback: enlever le nom du texte complet
+                                    job_title = rel_text.replace(person_name, '').strip(',').strip()
+                            else:
+                                job_title = rel_text.replace(person_name, '').strip(',').strip()
+                        else:
+                            # Pas de virgule, enlever le nom
+                            job_title = rel_text.replace(person_name, '').strip(',').strip()
+                    else:
+                        # OCCUPATION: Format "Title Name" - le titre est avant le nom
+                        job_title = rel_text.replace(person_name, '').strip()
+                    
                     # Nettoyer (enlever virgules, espaces multiples)
                     job_title = re.sub(r'[,\s]+', ' ', job_title).strip()
-                    if not job_title:
-                        job_title = rel_text  # Fallback si extraction échoue
+                    # Enlever les virgules en début/fin
+                    job_title = job_title.strip(',').strip()
+                    
+                    if not job_title or len(job_title) < 2:
+                        continue  # Rejeter si pas de titre valide
                 else:
                     # Parser la relation pour extraire personne et titre
                     person_name, job_title = parse_job_title_relation(rel_text, entities)
                 
-                if person_name:
-                    relations.append({
-                        'entity1': person_name,
-                        'relation': rel_type,
-                        'entity2': job_title
-                    })
+                if person_name and job_title:
+                    # Validation finale
+                    if len(person_name) >= 2 and len(job_title) >= 2:
+                        relations.append({
+                            'entity1': person_name,
+                            'relation': rel_type,
+                            'entity2': job_title
+                        })
                 else:
-                    # Si parsing échoue, mettre le texte complet dans entity2
-                    relations.append({
-                        'entity1': 'UNKNOWN',
-                        'relation': rel_type,
-                        'entity2': rel_text
-                    })
+                    # Si parsing échoue complètement, rejeter plutôt que mettre UNKNOWN
+                    # (on préfère ne pas exporter de mauvaises relations)
+                    continue
             elif rel_type == 'TAXONOMY':
                 # Pour TAXONOMY, le format est généralement "X IS_A Y"
                 # entity2 contient l'entité, entity1 serait le concept
