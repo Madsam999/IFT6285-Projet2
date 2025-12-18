@@ -52,6 +52,62 @@ class InformationExtractor:
                 {"POS": {"IN": ["NOUN", "PROPN"]}, "OP": "+"}
             ]
         ])
+        
+        # 3. LOCATION (personne/organisation dans un lieu)
+        self.matcher.add("LOCATION_BORN", [
+            [
+                {"ENT_TYPE": "PERSON"},
+                {"LEMMA": {"IN": ["born", "birth"]}},
+                {"LOWER": {"IN": ["in", "at", "on"]}, "OP": "?"},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": {"IN": ["GPE", "LOC", "FAC"]}, "OP": "+"}
+            ]
+        ])
+        
+        self.matcher.add("LOCATION_BASED", [
+            [
+                {"ENT_TYPE": {"IN": ["PERSON", "ORG"]}},
+                {"LEMMA": {"IN": ["based", "located", "situated", "headquartered"]}},
+                {"LOWER": {"IN": ["in", "at", "on"]}, "OP": "?"},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": {"IN": ["GPE", "LOC", "FAC"]}, "OP": "+"}
+            ]
+        ])
+        
+        # 4. ORGANIZATIONAL (membre de, fondateur de, président de)
+        self.matcher.add("ORG_MEMBER", [
+            [
+                {"ENT_TYPE": "PERSON"},
+                {"LEMMA": {"IN": ["member", "founder", "president", "director", "chairman", "ceo", "leader"]}},
+                {"LOWER": {"IN": ["of", "at", "in"]}},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": "ORG", "OP": "+"}
+            ]
+        ])
+        
+        # 5. TEMPORAL (événements avec dates)
+        self.matcher.add("EVENT_DATE", [
+            [
+                {"ENT_TYPE": "EVENT"},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": "DATE", "OP": "+"}
+            ],
+            [
+                {"ENT_TYPE": "DATE"},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": "EVENT", "OP": "+"}
+            ]
+        ])
+        
+        # 6. GEOGRAPHIC (relations entre lieux)
+        self.matcher.add("GEOGRAPHIC_RELATION", [
+            [
+                {"ENT_TYPE": {"IN": ["GPE", "LOC"]}},
+                {"LOWER": {"IN": ["in", "near", "south", "north", "east", "west", "of"]}},
+                {"POS": "DET", "OP": "?"},
+                {"ENT_TYPE": {"IN": ["GPE", "LOC"]}, "OP": "+"}
+            ]
+        ])
 
     def _get_structured_context(self, span):
         token = span.root

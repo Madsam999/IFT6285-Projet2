@@ -196,14 +196,24 @@ def export_relations_to_csv(input_file: str, output_file: str):
                     # (on préfère ne pas exporter de mauvaises relations)
                     continue
             elif rel_type == 'TAXONOMY':
-                # Pour TAXONOMY, le format est généralement "X IS_A Y"
-                # entity2 contient l'entité, entity1 serait le concept
-                # Pour l'instant, on met le texte dans entity2
-                relations.append({
-                    'entity1': 'UNKNOWN',
-                    'relation': rel_type,
-                    'entity2': rel_text
-                })
+                # Pour TAXONOMY, essayer d'extraire les entités du pattern
+                # Format: "X such as Y" ou "X like Y"
+                # Chercher les entités GPE/ORG/LOC dans le texte
+                taxonomy_entities = [e for e in entities if e.get('label') in ['GPE', 'ORG', 'LOC']]
+                if taxonomy_entities:
+                    # Prendre la première entité trouvée comme entity2
+                    entity2 = taxonomy_entities[0].get('text', rel_text)
+                    relations.append({
+                        'entity1': 'UNKNOWN',  # Le concept général (X)
+                        'relation': rel_type,
+                        'entity2': entity2  # L'entité spécifique (Y)
+                    })
+                else:
+                    relations.append({
+                        'entity1': 'UNKNOWN',
+                        'relation': rel_type,
+                        'entity2': rel_text
+                    })
             elif rel_type in ['SOCIAL_ISSUE', 'SOCIAL_ISSUE_CONFLICT', 'SOCIAL_ISSUE_CRISIS', 'SOCIAL_ISSUE_ACTION']:
                 # Relations sociales: entity2 contient le problème social
                 relations.append({
@@ -211,12 +221,61 @@ def export_relations_to_csv(input_file: str, output_file: str):
                     'relation': rel_type,
                     'entity2': rel_text
                 })
+            elif rel_type in ['LOCATION_BORN', 'LOCATION_BASED']:
+                # Extraire PERSON/ORG et GPE du texte
+                person_org = [e for e in entities if e.get('label') in ['PERSON', 'ORG']]
+                location = [e for e in entities if e.get('label') in ['GPE', 'LOC', 'FAC']]
+                
+                if person_org and location:
+                    relations.append({
+                        'entity1': person_org[0].get('text', 'UNKNOWN'),
+                        'relation': rel_type,
+                        'entity2': location[0].get('text', 'UNKNOWN')
+                    })
+                else:
+                    # Si pas d'entités trouvées, rejeter
+                    continue
+            elif rel_type == 'ORG_MEMBER':
+                # Extraire PERSON et ORG
+                person = [e for e in entities if e.get('label') == 'PERSON']
+                org = [e for e in entities if e.get('label') == 'ORG']
+                
+                if person and org:
+                    relations.append({
+                        'entity1': person[0].get('text', 'UNKNOWN'),
+                        'relation': rel_type,
+                        'entity2': org[0].get('text', 'UNKNOWN')
+                    })
+                else:
+                    continue
+            elif rel_type == 'EVENT_DATE':
+                # Extraire EVENT et DATE
+                event = [e for e in entities if e.get('label') == 'EVENT']
+                date = [e for e in entities if e.get('label') == 'DATE']
+                
+                if event and date:
+                    relations.append({
+                        'entity1': event[0].get('text', 'UNKNOWN'),
+                        'relation': rel_type,
+                        'entity2': date[0].get('text', 'UNKNOWN')
+                    })
+                else:
+                    continue
+            elif rel_type == 'GEOGRAPHIC_RELATION':
+                # Extraire deux GPE/LOC
+                locations = [e for e in entities if e.get('label') in ['GPE', 'LOC']]
+                
+                if len(locations) >= 2:
+                    relations.append({
+                        'entity1': locations[0].get('text', 'UNKNOWN'),
+                        'relation': rel_type,
+                        'entity2': locations[1].get('text', 'UNKNOWN')
+                    })
+                else:
+                    continue
             else:
-                relations.append({
-                    'entity1': 'UNKNOWN',
-                    'relation': rel_type,
-                    'entity2': rel_text
-                })
+                # Relations non gérées: rejeter plutôt que mettre UNKNOWN
+                continue
     
     print(f"Export de {len(relations)} relations vers CSV...")
     
