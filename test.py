@@ -50,7 +50,7 @@ def extract_and_save(nlp, corpus_iter, path="extracted_data.jsonl"):
             clean_ents = extractor.normalize_entities(doc)
             
             # 2. Acronyms
-            acronyms = extractor.find_acronyms(doc)
+            acronyms = extractor._extract_acronyms(doc)
             
             # 3. Relations (Patterns)
             relations = extractor.extract_relations(doc)
@@ -91,6 +91,6 @@ if __name__ == '__main__':
         ds = load_dataset("wikitext", "wikitext-103-v1", split="train")
 
     # Run Pipeline
-    corpus = iter_corpus_chunks(ds, max_articles=args.max_articles)
+    corpus = iter_corpus_chunks(ds, max_articles=50)
     extract_and_save(nlp, corpus, path="results_ie.jsonl")
     print("Done! Results saved to results_ie.jsonl")
