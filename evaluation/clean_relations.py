@@ -5,7 +5,7 @@ DIRECTORY_OF_RESULTS = "results"
 DIRECTORY_OF_CSV = "csv"
 PATH_TO_RELATIONS = os.path.join(DIRECTORY_OF_RESULTS, DIRECTORY_OF_CSV, "relations.csv")
 
-def main():
+def clean_relations():
     relations_df = pd.read_csv(PATH_TO_RELATIONS, sep = ";")
 
     totalRows = len(relations_df)
@@ -20,6 +20,8 @@ def main():
 
     relations_df.to_csv("results/csv/relations_clean.csv", sep = ";", index = False)
 
+    return relations_df
+
 
 if __name__ == "__main__":
-    main()
+    clean_relations()

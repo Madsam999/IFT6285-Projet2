@@ -6,6 +6,8 @@ import argparse
 import os
 import subprocess
 import sys
+import pandas as pd
+from evaluation.information_evaluator import Evaluator
 
 
 STEPS = {
@@ -167,10 +169,18 @@ def main():
         if not success:
             print(f"\n✗ Le pipeline s'est arrêté à l'étape {step_num}")
             return
-    
+    evaluator = Evaluator()
     print("\n" + "="*80)
     print("✓ PIPELINE TERMINÉ AVEC SUCCÈS")
     print("="*80)
+    print("Evaluating Results:")
+    print("="*80)
+    print("Relations.csv:")
+    evaluator.evaluate_relations()
+    acronyms = pd.read_csv(os.path.join("results", "csv", "acronyms.csv"), sep = ";")
+    entities = pd.read_csv(os.path.join("results", "csv", "entities.csv"), sep = ";")
+    evaluator.evaluate_acronyms(acronyms)
+    evaluator.evaluate_entities()
 
 
 if __name__ == '__main__':

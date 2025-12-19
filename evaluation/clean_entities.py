@@ -5,10 +5,7 @@ DIRECTORY_OF_RESULTS = "results"
 DIRECTORY_OF_CSV = "csv"
 PATH_TO_RELATIONS = os.path.join(DIRECTORY_OF_RESULTS, DIRECTORY_OF_CSV, "entities.csv")
 
-def main():
-    ...
-
-if __name__ == "__main__":
+def clean_entities():
     entities_df = pd.read_csv(PATH_TO_RELATIONS, sep = ";")
 
     unk_mask = entities_df["entity"].str.lower().isin(["unk", "unkown", "none"])
@@ -28,3 +25,8 @@ if __name__ == "__main__":
     df_cleaned = entities_df[~unk_mask]
 
     df_cleaned.to_csv(os.path.join(DIRECTORY_OF_RESULTS, DIRECTORY_OF_CSV, "entities_clean.csv"))
+
+    return df_cleaned
+
+if __name__ == "__main__":
+    clean_entities()
