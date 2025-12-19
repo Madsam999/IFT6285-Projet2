@@ -128,12 +128,10 @@ def export_relations_to_csv(input_file: str, output_file: str):
             rel_text = rel.get('text', '')
             
             # Normaliser les anciens noms vers les nouveaux
-            if rel_type in ['JOB_TITLE', 'OCCUPATION']:
+            if rel_type in ['JOB_TITLE', 'OCCUPATION', 'JOB_TITLE_APPOSITION', 'OCCUPATION_APPOSITION']:
                 rel_type = 'OCCUPATION'
-            elif rel_type in ['JOB_TITLE_APPOSITION', 'OCCUPATION_APPOSITION']:
-                rel_type = 'OCCUPATION_APPOSITION'
             
-            if rel_type in ['OCCUPATION', 'OCCUPATION_APPOSITION']:
+            if rel_type == 'OCCUPATION':
                 # Filtrer les relations invalides
                 if not rel_text or len(rel_text.strip()) < 3:
                     continue
@@ -151,25 +149,16 @@ def export_relations_to_csv(input_file: str, output_file: str):
                 person_name = rel.get('person_entity')
                 
                 if person_name:
-                    # Extraire le titre selon le type de relation
-                    if rel_type == 'OCCUPATION_APPOSITION':
+                    # Extraire le titre (gère les deux formats: "Title Name" et "Name, Title")
+                    if ',' in rel_text:
                         # Format: "Name, Title" - le titre est après la virgule
-                        if ',' in rel_text:
-                            parts = rel_text.split(',', 1)
-                            if len(parts) == 2:
-                                # Vérifier que la première partie contient le nom
-                                if person_name in parts[0]:
-                                    job_title = parts[1].strip()
-                                else:
-                                    # Fallback: enlever le nom du texte complet
-                                    job_title = rel_text.replace(person_name, '').strip(',').strip()
-                            else:
-                                job_title = rel_text.replace(person_name, '').strip(',').strip()
+                        parts = rel_text.split(',', 1)
+                        if len(parts) == 2 and person_name in parts[0]:
+                            job_title = parts[1].strip()
                         else:
-                            # Pas de virgule, enlever le nom
                             job_title = rel_text.replace(person_name, '').strip(',').strip()
                     else:
-                        # OCCUPATION: Format "Title Name" - le titre est avant le nom
+                        # Format "Title Name" - le titre est avant le nom
                         job_title = rel_text.replace(person_name, '').strip()
                     
                     # Nettoyer (enlever virgules, espaces multiples)

@@ -46,8 +46,8 @@ STEPS = {
         ]
     },
     '5': {
-        'name': 'Extraction des relations',
-        'script': 'extraction/extract_relations.py',
+        'name': 'Extraction des relations (Stanza)',
+        'script': 'extraction/extract_relations_stanza.py',
         'output': 'results/raw/relations.jsonl',
         'args': [
             '--input', 'results/normalized/entities_normalized.jsonl',
