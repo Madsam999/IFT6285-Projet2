@@ -219,31 +219,46 @@ class InformationExtractor:
         # -------------------------------------------------------
         # CASE 1: Backward Search -> "United Nations (UN)"
         # -------------------------------------------------------
-        pattern_backward = r'\s\(([A-Z][A-Za-z0-9.&-]*)\)'
+        pattern_backward = r'\s\(([A-Z][A-Za-z0-9.&-]{1,})\)'
         for match in re.finditer(pattern_backward, doc.text):
             short_form = match.group(1)
             span_start = match.start()
+            
+            # Filtrer les initiales simples (une lettre + point)
+            clean_short = short_form.replace(".", "")
+            if len(clean_short) < 2:
+                continue
             
             # Mark indices as seen (approximate map from char to token)
             # We use a simple heuristic: if a span is found, we won't add standalone tokens from it.
             # (Strict token mapping is complex with regex, but we will filter duplicates at the end).
             
-            clean_short = short_form.replace(".", "")
             preceding_text = doc.text[:span_start].strip()
-            tokens = preceding_text.split()
+            # Chercher dans les 20 derniers mots maximum
+            tokens = [t.strip() for t in preceding_text.split() if t.strip()][-20:]
             definition = "unknown"
             
             if len(tokens) >= len(clean_short):
+                # Essayer d'abord avec exactement le bon nombre de mots
                 candidate_words = tokens[-len(clean_short):]
-                initials = "".join([w[0].upper() for w in candidate_words])
+                initials = "".join([w[0].upper() if w else '' for w in candidate_words])
                 if initials == clean_short:
                     definition = " ".join(candidate_words)
                 else:
-                    candidate_words_ext = tokens[-min(len(tokens), len(clean_short) + 3):]
-                    definition_candidate = " ".join(candidate_words_ext)
-                    match_count = sum(1 for w in candidate_words_ext if w[0].upper() in clean_short)
-                    if match_count >= len(clean_short) * 0.7:
-                         definition = definition_candidate
+                    # Essayer avec plus de mots (jusqu'à +3)
+                    for extra in range(1, min(4, len(tokens) - len(clean_short) + 1)):
+                        candidate_words_ext = tokens[-(len(clean_short) + extra):]
+                        initials_ext = "".join([w[0].upper() if w else '' for w in candidate_words_ext])
+                        if initials_ext == clean_short:
+                            definition = " ".join(candidate_words_ext)
+                            break
+                    
+                    # Si toujours pas trouvé, utiliser une correspondance partielle
+                    if definition == "unknown":
+                        candidate_words_ext = tokens[-min(len(tokens), len(clean_short) + 3):]
+                        match_count = sum(1 for w in candidate_words_ext if w and w[0].upper() in clean_short)
+                        if match_count >= len(clean_short) * 0.7:
+                            definition = " ".join(candidate_words_ext)
 
             acronyms.append({"type": "ACRONYM", "acronym": short_form, "definition": definition})
             # Add the acronym string to a set to prevent adding it again as standalone
@@ -295,10 +310,15 @@ class InformationExtractor:
             # 2. Length 2-6 (Avoids single letters "I" "A", and long noise)
             # 3. Is a Proper Noun or Noun (Avoids "IS", "AT", "US" if tagged as PRON)
             # 4. Check against a small blocklist of common confusing uppercase words
-            blocklist = ["US", "IT", "OK", "AM", "PM", "TV", "PC"] 
+            # 5. Not a single letter with point (ex: "B.")
+            blocklist = ["US", "IT", "OK", "AM", "PM", "TV", "PC", "II", "III", "IV", "VI", "VII", "VIII", "IX", "XI"] 
             
-            if token.is_upper and 2 <= len(txt) <= 6 and token.pos_ in ["PROPN", "NOUN"]:
-                if txt not in blocklist:
+            clean_txt = txt.replace(".", "")
+            if len(clean_txt) < 2:
+                continue  # Ignorer les initiales simples
+            
+            if token.is_upper and 2 <= len(clean_txt) <= 6 and token.pos_ in ["PROPN", "NOUN"]:
+                if txt not in blocklist and clean_txt not in blocklist:
                     acronyms.append({
                         "type": "ACRONYM",
                         "acronym": txt,

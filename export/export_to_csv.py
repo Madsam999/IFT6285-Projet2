@@ -46,7 +46,7 @@ def export_entities_to_csv(input_file: str, output_file: str):
         for (text, label), freq in entity_counter.most_common():
             writer.writerow([text, label, freq])
     
-    print(f"✓ {len(entity_counter)} entités exportées vers {output_file}")
+    print(f"[OK] {len(entity_counter)} entités exportées vers {output_file}")
 
 
 def parse_job_title_relation(rel_text: str, entities: list) -> tuple:
@@ -292,7 +292,7 @@ def export_relations_to_csv(input_file: str, output_file: str):
                 rel['entity2']
             ])
     
-    print(f"✓ {len(relations)} relations exportées vers {output_file}")
+    print(f"[OK] {len(relations)} relations exportées vers {output_file}")
 
 
 def export_acronyms_to_csv(input_file: str, output_file: str):
@@ -300,23 +300,66 @@ def export_acronyms_to_csv(input_file: str, output_file: str):
     Exporte les acronymes vers un fichier CSV.
     Format: acronym;full_form
     """
+    import re
+    
     print("Collecte des acronymes...")
     acronyms_dict = {}
+    acronym_counts = Counter()  # Compter les occurrences pour filtrer les faux positifs
+    
+    # Mots à exclure (initiales simples, nombres seuls, etc.)
+    excluded_patterns = [
+        r'^[A-Z]\.$',  # Une seule lettre avec point (ex: "B.")
+        r'^[IVX]+$',   # Nombres romains seuls (ex: "II", "IV")
+        r'^[0-9]+$',   # Nombres seuls
+        r'^[A-Z]\.?$', # Une seule lettre (ex: "B", "B.")
+    ]
     
     for doc in tqdm(load_ner_data(input_file), desc="Lecture des documents"):
         acronyms = doc.get('acronyms', [])
         
         for acro in acronyms:
-            acronym = acro.get('acronym', '')
-            definition = acro.get('definition', 'unknown')
+            acronym = acro.get('acronym', '').strip()
+            definition = acro.get('definition', 'unknown').strip()
             
-            if acronym:
-                # Garder la meilleure définition si plusieurs occurrences
-                if acronym not in acronyms_dict or definition != 'unknown':
-                    if acronyms_dict.get(acronym) == 'unknown' or definition != 'unknown':
-                        acronyms_dict[acronym] = definition
+            if not acronym:
+                continue
+            
+            # Filtrer les initiales simples et autres faux positifs
+            is_excluded = False
+            for pattern in excluded_patterns:
+                if re.match(pattern, acronym):
+                    is_excluded = True
+                    break
+            
+            if is_excluded:
+                continue
+            
+            # Filtrer les acronymes trop courts (moins de 2 caractères sans le point)
+            clean_acronym = acronym.replace('.', '')
+            if len(clean_acronym) < 2:
+                continue
+            
+            # Compter les occurrences
+            acronym_counts[acronym] += 1
+            
+            # Garder la meilleure définition si plusieurs occurrences
+            if acronym not in acronyms_dict:
+                acronyms_dict[acronym] = definition
+            elif definition != 'unknown' and acronyms_dict[acronym] == 'unknown':
+                # Remplacer "unknown" par une vraie définition si trouvée
+                acronyms_dict[acronym] = definition
+            elif definition != 'unknown' and acronyms_dict[acronym] != 'unknown':
+                # Si les deux ont des définitions, garder la plus courte (généralement plus précise)
+                if len(definition) < len(acronyms_dict[acronym]):
+                    acronyms_dict[acronym] = definition
     
-    print(f"Export de {len(acronyms_dict)} acronymes uniques vers CSV...")
+    # Note: On garde tous les acronymes qui ont passé les filtres de qualité
+    # (initiales simples, nombres, etc.). Le filtre de fréquence est retiré car
+    # pour de petits échantillons, il est normal qu'un acronyme n'apparaisse qu'une fois.
+    filtered_acronyms = acronyms_dict.copy()
+    
+    print(f"Export de {len(filtered_acronyms)} acronymes uniques vers CSV...")
+    print(f"  (dont {sum(1 for d in filtered_acronyms.values() if d != 'unknown')} avec définition connue)")
     
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
@@ -324,10 +367,20 @@ def export_acronyms_to_csv(input_file: str, output_file: str):
         writer = csv.writer(f, delimiter=';')
         writer.writerow(['acronym', 'full_form'])
         
-        for acronym, full_form in sorted(acronyms_dict.items()):
+        # Trier par: (1) définition connue d'abord, (2) puis par fréquence, (3) puis alphabétiquement
+        sorted_items = sorted(
+            filtered_acronyms.items(),
+            key=lambda x: (
+                x[1] == 'unknown',  # "unknown" en dernier
+                -acronym_counts[x[0]],  # Plus fréquents d'abord
+                x[0]  # Alphabétiquement
+            )
+        )
+        
+        for acronym, full_form in sorted_items:
             writer.writerow([acronym, full_form])
     
-    print(f"✓ {len(acronyms_dict)} acronymes exportés vers {output_file}")
+    print(f"[OK] {len(filtered_acronyms)} acronymes exportés vers {output_file}")
 
 
 def main():
@@ -381,7 +434,7 @@ def main():
         print(f"\n⚠️  Fichier de relations non trouvé: {args.relations_input}")
     
     print("\n" + "="*80)
-    print("✓ EXPORT TERMINÉ")
+    print("[OK] EXPORT TERMINÉ")
     print("="*80)
     print(f"Fichiers CSV disponibles dans: {args.output_dir}")
     print("  - entities.csv")
