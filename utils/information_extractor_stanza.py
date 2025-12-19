@@ -6,6 +6,7 @@ import stanza
 from stanza.models.common.doc import Document
 import re
 from typing import List, Dict
+import wikipedia
 
 
 class InformationExtractorStanza:
@@ -22,6 +23,8 @@ class InformationExtractorStanza:
         print(f"Initialisation de Stanza (lang={lang}, processors={processors})...")
         self.nlp = stanza.Pipeline(lang=lang, processors=processors, use_gpu=True)
         print("Stanza initialisé avec succès.")
+        self.blocklist = {"ID", "OK", "AM", "PM", "TV", "PC", "CD", "DJ", "MC", "US", "UK", "II", "III", "IV", "VI"}
+        self.acronym_cache = {}
     
     def _extract_occupation_from_dependencies(self, doc: Document) -> List[Dict]:
         """
@@ -184,164 +187,138 @@ class InformationExtractorStanza:
         
         return relations
     
+    def _resolve_acronym_via_wikipedia(self, acronym: str) -> str:
+        """
+        Helper: Tente de trouver la définition via Wikipedia si elle n'est pas dans le texte.
+        Utilise un cache pour éviter de bannir l'IP.
+        """
+        # 1. Vérifier le cache
+        if acronym in self.acronym_cache:
+            return self.acronym_cache[acronym]
+
+        # 2. Vérifier si c'est un mot commun ignoré
+        if acronym in self.blocklist:
+            return "Unknown"
+
+        try:
+            # Récupérer le titre de la page (Wikipedia gère les redirections ex: WHO -> World Health Organization)
+            # auto_suggest=False est important pour éviter les corrections bizarres
+            page_title = wikipedia.page(acronym, auto_suggest=False).title
+            
+            # Nettoyage: "EPA (Agency)" -> "EPA"
+            clean_def = page_title.split('(')[0].strip()
+            
+            # Stocker dans le cache
+            self.acronym_cache[acronym] = clean_def
+            return clean_def
+
+        except wikipedia.exceptions.DisambiguationError as e:
+            # En cas d'ambiguïté, on prend la première option (la plus commune)
+            first_option = e.options[0]
+            self.acronym_cache[acronym] = first_option
+            return first_option
+            
+        except (wikipedia.exceptions.PageError, Exception):
+            # En cas d'erreur ou page non trouvée
+            self.acronym_cache[acronym] = "Unknown"
+            return "Unknown"
+
     def _extract_acronyms_with_stanza(self, doc: Document, text: str) -> List[Dict]:
         """
-        Extrait les acronymes en utilisant Stanza pour une meilleure précision.
-        Combine regex et analyse Stanza pour identifier les acronymes et leurs définitions.
+        Extrait les acronymes en utilisant une approche hybride :
+        1. Contextuelle : Cherche les définitions explicites dans le texte (ex: "EPA (Environmental Protection Agency)").
+        2. Standalone : Pour les acronymes sans définition, utilise Stanza (POS tags) + Wikipedia.
         """
         acronyms = []
-        seen = set()
+        seen_acronyms = set()
         
-        # Pattern 1: "Full Form (ACRONYM)" - utiliser Stanza pour identifier les tokens
-        # Définition des patterns
-        pattern_backward_start = r'^\(([A-Z0-9][A-Za-z0-9.&-]{1,})\)'  # Début de ligne
-        pattern_backward_space = r'\s\(([A-Z0-9][A-Za-z0-9.&-]{1,})\)'  # Après espace
+        # -------------------------------------------------------
+        # PHASE 1 : Recherche Contextuelle (Haute Confiance)
+        # -------------------------------------------------------
+        # Pattern: "Environmental Protection Agency (EPA)"
+        # On cherche : Mot (MAJUSCULE)
+        pattern_backward = r'\s\(([A-Z0-9][A-Za-z0-9.&-]{1,})\)'
         
-        # Chercher les deux patterns
-        matches = []
-        for match in re.finditer(pattern_backward_start, text, re.MULTILINE):
-            matches.append((match.start(), match.group(1)))
-        for match in re.finditer(pattern_backward_space, text):
-            matches.append((match.start(), match.group(1)))
-        
-        # Trier par position et traiter
-        matches.sort(key=lambda x: x[0])
-        
-        for span_start, short_form in matches:
-            clean_short = short_form.replace(".", "").replace("-", "").replace("&", "")
+        for match in re.finditer(pattern_backward, text):
+            short_form = match.group(1)
+            span_start = match.start()
             
-            # Filtrer les nombres seuls
-            if clean_short.isdigit() or len(clean_short) < 2 or short_form in seen:
+            clean_short = short_form.replace(".", "").replace("-", "")
+            if len(clean_short) < 2 or clean_short in self.blocklist:
                 continue
+
+            # 1. Look at text immediately before the acronym
+            preceding_text = text[:span_start].strip()
+            tokens = preceding_text.split()
             
-            # Utiliser Stanza pour trouver les tokens précédents
-            definition = "unknown"
+            definition = "Unknown"
             
-            # Chercher dans les phrases Stanza pour trouver les mots précédents
-            # Utiliser une approche basée sur le texte de la phrase
-            for sentence in doc.sentences:
-                sentence_words = [w.text for w in sentence.words]
-                sentence_text = " ".join(sentence_words)
+            # 2. Logic: Grab the last N words, where N is the length of the acronym
+            # (e.g. for EPA (3 letters), grab last 3 words: "Environmental Protection Agency")
+            if len(tokens) >= len(clean_short):
+                # We grab a few extra words just in case (e.g. "The World Health...")
+                # clean_short length + 2 is a safe window
+                window = min(len(tokens), len(clean_short) + 2)
+                candidate_words = tokens[-window:]
                 
-                # Vérifier si cette phrase contient l'acronyme (chercher la parenthèse)
-                if '(' in sentence_text and short_form in sentence_text:
-                    # Trouver la position de la parenthèse dans la phrase
-                    paren_idx = sentence_text.find('(')
-                    if paren_idx >= 0:
-                        # Trouver les mots avant la parenthèse
-                        words_before_paren = []
-                        current_pos = 0
-                        for word in sentence.words:
-                            word_pos = sentence_text.find(word.text, current_pos)
-                            if word_pos >= 0 and word_pos < paren_idx:
-                                words_before_paren.append(word)
-                                current_pos = word_pos + len(word.text)
-                            elif word_pos >= paren_idx:
-                                break
-                        
-                        # Prendre les N derniers mots (N = longueur de l'acronyme)
-                        if len(words_before_paren) >= len(clean_short):
-                            candidate_words = words_before_paren[-len(clean_short):]
-                            # Utiliser les textes des tokens pour construire les initiales
-                            initials = "".join([w.text[0].upper() if w.text and w.text[0].isalpha() else '' 
-                                              for w in candidate_words])
-                            if initials == clean_short:
-                                definition = " ".join([w.text for w in candidate_words])
-                                break
-                        else:
-                            # Essayer avec plus de mots si nécessaire
-                            for extra in range(1, min(4, len(words_before_paren) - len(clean_short) + 1)):
-                                if len(words_before_paren) >= len(clean_short) + extra:
-                                    candidate_words_ext = words_before_paren[-(len(clean_short) + extra):]
-                                    initials_ext = "".join([w.text[0].upper() if w.text and w.text[0].isalpha() else '' 
-                                                           for w in candidate_words_ext])
-                                    if initials_ext == clean_short:
-                                        definition = " ".join([w.text for w in candidate_words_ext])
-                                        break
-                        if definition != "unknown":
-                            break
-            
-            # Fallback: utiliser regex si Stanza n'a pas trouvé
-            if definition == "unknown":
-                preceding_text = text[:span_start].strip()
-                tokens = [t.strip() for t in preceding_text.split() if t.strip()][-20:]
-                if len(tokens) >= len(clean_short):
-                    candidate_words = tokens[-len(clean_short):]
-                    initials = "".join([w[0].upper() if w and w[0].isalpha() else '' for w in candidate_words])
-                    if initials == clean_short:
-                        definition = " ".join(candidate_words)
-            
-            acronyms.append({"type": "ACRONYM", "acronym": short_form, "definition": definition})
-            seen.add(short_form)
-        
-        # Pattern 2: "ACRONYM (Full Form)" - utiliser Stanza pour valider
-        pattern_forward = r'\b([A-Z0-9][A-Za-z0-9.&-]{1,})\s*\(([^)]+)\)'
-        for match in re.finditer(pattern_forward, text):
-            potential_acronym = match.group(1)
-            if potential_acronym in seen:
-                continue
-            
-            clean_acronym = potential_acronym.replace(".", "").replace("-", "").replace("&", "")
-            
-            # Filtrer les nombres seuls
-            if clean_acronym.isdigit() or len(clean_acronym) < 2:
-                continue
-            
-            potential_def = match.group(2).strip()
-            if not potential_def or len(potential_def) < 3:
-                continue
-            
-            # Utiliser Stanza pour valider la correspondance
-            def_words = [w for w in potential_def.split() if w and w[0].isalpha()]
-            if not def_words:
-                continue
-            
-            # Vérifier la correspondance des initiales
-            match_count = 0
-            acronym_chars = [c for c in clean_acronym if c.isalpha()]
-            for char in acronym_chars:
-                if any(w and w[0].upper() == char for w in def_words):
-                    match_count += 1
-            
-            # Accepter si au moins 70% des lettres correspondent
-            if len(acronym_chars) > 0 and match_count >= len(acronym_chars) * 0.7:
-                # Utiliser Stanza pour améliorer la définition si possible
-                # Chercher dans les phrases pour trouver le contexte
-                for sentence in doc.sentences:
-                    sentence_text = " ".join([w.text for w in sentence.words])
-                    if potential_acronym in sentence_text and potential_def in sentence_text:
-                        # La définition est validée par le contexte Stanza
+                # Simple Heuristic: match the first letters
+                # Check the last 3 words, then last 4, etc.
+                found_match = False
+                for i in range(len(clean_short), window + 1):
+                    subset = candidate_words[-i:]
+                    # Get initials of this subset
+                    initials = "".join([w[0].upper() for w in subset if w[0].isalpha()])
+                    
+                    # Fuzzy match: If initials contain the acronym (e.g. WHOrgc matches WHO)
+                    if clean_short in initials:
+                        definition = " ".join(subset)
+                        found_match = True
                         break
                 
-                acronyms.append({
-                    "type": "ACRONYM",
-                    "acronym": potential_acronym,
-                    "definition": potential_def
-                })
-                seen.add(potential_acronym)
-        
-        # Pattern 3: Acronymes standalone détectés par Stanza (tokens en majuscules)
+                if not found_match:
+                    # Fallback: Just take the last N words if no perfect match found
+                    definition = " ".join(tokens[-len(clean_short):])
+
+            acronyms.append({
+                "type": "ACRONYM", 
+                "acronym": short_form, 
+                "definition": definition  # <--- Now holds the actual words!
+            })
+            seen_acronyms.add(short_form)
+
+        # -------------------------------------------------------
+        # PHASE 2 : Recherche Standalone via Stanza + Wikipedia
+        # -------------------------------------------------------
         for sentence in doc.sentences:
             for word in sentence.words:
-                # Chercher les tokens qui ressemblent à des acronymes
                 txt = word.text
-                clean_txt = txt.replace(".", "").replace("-", "").replace("&", "")
-                
-                # Critères: tout en majuscules, longueur 2-6, POS NOUN/PROPN
-                if (txt.isupper() and 2 <= len(clean_txt) <= 6 and 
-                    word.upos in ['NOUN', 'PROPN'] and 
-                    clean_txt not in seen and not clean_txt.isdigit()):
+                clean_txt = txt.replace(".", "").replace("-", "")
+
+                # Skip si déjà trouvé en Phase 1
+                if txt in seen_acronyms:
+                    continue
+
+                # HEURISTIQUES STANZA :
+                # 1. Tout en majuscules
+                # 2. Longueur 2 à 6
+                # 3. Tag POS est PROPN (Nom Propre) - Élimine "US" (pronoun), "IT" (pronoun) souvent
+                # 4. Pas dans la blocklist
+                if (txt.isupper() and 
+                    2 <= len(clean_txt) <= 6 and 
+                    word.upos == 'PROPN' and 
+                    clean_txt not in self.blocklist):
                     
-                    # Blocklist de mots communs
-                    blocklist = ["US", "IT", "OK", "AM", "PM", "TV", "PC", "II", "III", "IV"]
-                    if clean_txt not in blocklist:
-                        acronyms.append({
-                            "type": "ACRONYM",
-                            "acronym": txt,
-                            "definition": "unknown"
-                        })
-                        seen.add(clean_txt)
-        
+                    # C'est un candidat solide (ex: "FBI", "NASA")
+                    # On demande à Wikipedia de le résoudre
+                    definition = self._resolve_acronym_via_wikipedia(txt)
+                    
+                    acronyms.append({
+                        "type": "ACRONYM",
+                        "acronym": txt,
+                        "definition": definition
+                    })
+                    seen_acronyms.add(txt)
+
         return acronyms
     
     def _extract_taxonomy_relations(self, doc: Document) -> List[Dict]:
