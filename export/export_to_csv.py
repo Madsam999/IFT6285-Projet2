@@ -18,10 +18,13 @@ def export_entities_to_csv(input_file: str, output_file: str):
     """
     Exporte les entités vers un fichier CSV.
     Format: entity;type;frequency
+    Filtre les entités avec bruit de formatage (trop courtes, caractères spéciaux).
     """
+    import re
     print("Collecte des entités...")
     entity_counter = Counter()
     entity_types = {}
+    filtered_count = 0
     
     for doc in tqdm(load_ner_data(input_file), desc="Lecture des documents"):
         for entity in doc.get('entities', []):
@@ -29,12 +32,20 @@ def export_entities_to_csv(input_file: str, output_file: str):
             label = entity.get('label', 'UNKNOWN')
             
             if text:
+                # Filtrer les entités avec bruit de formatage
+                # Rejeter si trop court (< 2 caractères), contient retours à la ligne, ou commence par non-alphanumérique
+                if len(text) < 2 or re.search(r'[\n\r;]', text) or re.match(r'^[^\w]', text):
+                    filtered_count += 1
+                    continue
+                
                 # Utiliser (text, label) comme clé pour compter les occurrences
                 key = (text, label)
                 entity_counter[key] += 1
                 entity_types[key] = label
     
     print(f"Export de {len(entity_counter)} entités uniques vers CSV...")
+    if filtered_count > 0:
+        print(f"  ({filtered_count} entités filtrées pour bruit de formatage)")
     
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
@@ -175,11 +186,14 @@ def export_relations_to_csv(input_file: str, output_file: str):
                 if person_name and job_title:
                     # Validation finale
                     if len(person_name) >= 2 and len(job_title) >= 2:
-                        relations.append({
-                            'entity1': person_name,
-                            'relation': rel_type,
-                            'entity2': job_title
-                        })
+                        # Filtrer les relations avec artefacts de tokenisation
+                        if not (person_name.strip().endswith("'s") or job_title.strip().endswith("'s")):
+                            if not (re.match(r'^[.,;:]', person_name.strip()) or re.match(r'^[.,;:]', job_title.strip())):
+                                relations.append({
+                                    'entity1': person_name,
+                                    'relation': rel_type,
+                                    'entity2': job_title
+                                })
                 else:
                     # Si parsing échoue complètement, rejeter plutôt que mettre UNKNOWN
                     # (on préfère ne pas exporter de mauvaises relations)
@@ -243,13 +257,17 @@ def export_relations_to_csv(input_file: str, output_file: str):
                 date = [e for e in entities if e.get('label') == 'DATE']
                 
                 if event and date:
-                    relations.append({
-                        'entity1': event[0].get('text', 'UNKNOWN'),
-                        'relation': rel_type,
-                        'entity2': date[0].get('text', 'UNKNOWN')
-                    })
-                else:
-                    continue
+                    event_text = event[0].get('text', '')
+                    date_text = date[0].get('text', '').strip()
+                    # Valider le format de la date (année 4 chiffres ou format date)
+                    import re
+                    if re.match(r'^(\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})$', date_text):
+                        relations.append({
+                            'entity1': event_text,
+                            'relation': rel_type,
+                            'entity2': date_text
+                        })
+                # Rejeter les relations EVENT_DATE sans format de date valide
             elif rel_type == 'GEOGRAPHIC_RELATION':
                 # Extraire deux GPE/LOC
                 locations = [e for e in entities if e.get('label') in ['GPE', 'LOC']]
@@ -265,6 +283,17 @@ def export_relations_to_csv(input_file: str, output_file: str):
             else:
                 # Relations non gérées: rejeter plutôt que mettre UNKNOWN
                 continue
+        
+        # Filtrer les relations avec entity1 = "UNKNOWN" (sauf pour certains types spéciaux)
+        filtered_relations = []
+        for rel in relations:
+            # Garder seulement les relations où entity1 n'est pas UNKNOWN (sauf pour certains types spéciaux)
+            if rel['entity1'] != 'UNKNOWN' or rel['relation'] in ['TAXONOMY', 'SOCIAL_ISSUE_CONFLICT', 'SOCIAL_ISSUE_CRISIS', 'SOCIAL_ISSUE_ACTION']:
+                # Pour les types spéciaux, vérifier que entity2 est valide
+                if rel['entity2'] != 'UNKNOWN':
+                    filtered_relations.append(rel)
+        
+        relations = filtered_relations
     
     print(f"Export de {len(relations)} relations vers CSV...")
     

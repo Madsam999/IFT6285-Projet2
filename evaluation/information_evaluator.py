@@ -75,6 +75,7 @@ class Evaluator:
         # 4. Calculate Scores
         cleanliness_score = 100 - (stats["cleanliness_issues"] / stats["total_rows"] * 100)
         
+        stats['cleanliness_score'] = cleanliness_score
         self.results['relations'] = stats
         
         # Report
@@ -87,6 +88,8 @@ class Evaluator:
             print("\n[Sample Issues Found]")
             for i in issues[:5]: # Show top 5
                 print(f" - {i}")
+        
+        return stats
 
     def _check_cleanliness(self, text):
         """Internal helper for relations."""
@@ -155,14 +158,19 @@ class Evaluator:
         if len(ambiguous_entities) > 0:
             issues.append(f"Ambiguous Types found: {ambiguous_entities.index.tolist()[:3]}...")
 
+        stats['noise_percentage'] = (stats['noise']/stats['total'])*100 if stats['total'] > 0 else 0
+        self.results['entities'] = stats
+        
         print(f"Total Entities: {stats['total']}")
-        print(f"Formatting Noise: {stats['noise']} ({(stats['noise']/stats['total'])*100:.1f}%)")
+        print(f"Formatting Noise: {stats['noise']} ({stats['noise_percentage']:.1f}%)")
         print(f"Length Outliers: {stats['outliers']}")
         print(f"Type Ambiguity: {stats['ambiguous']} unique entities have multiple types")
         
         if issues:
             print("[Sample Entity Issues]")
             for i in issues[:3]: print(f" - {i}")
+        
+        return stats
 
     def evaluate_acronyms(self, df: pd.DataFrame):
         """
@@ -188,7 +196,19 @@ class Evaluator:
                 if not self._is_initials_match(acr, defn):
                     stats["mismatch_logic"] += 1
                     issues.append(f"Logic Mismatch: '{acr}' != '{defn}'")
-                    
+        
+        stats['mismatch_percentage'] = (stats['mismatch_logic'] / stats['total'] * 100) if stats['total'] > 0 else 0
+        self.results['acronyms'] = stats
+        
+        print(f"Total Acronyms: {stats['total']}")
+        print(f"Stopword Acronyms: {stats['stopword_acronyms']}")
+        print(f"Logic Mismatches: {stats['mismatch_logic']} ({stats['mismatch_percentage']:.1f}%)")
+        
+        if issues:
+            print("[Sample Acronym Issues]")
+            for i in issues[:3]: print(f" - {i}")
+        
+        return stats
 
 # ==========================================
 # TEST RUN

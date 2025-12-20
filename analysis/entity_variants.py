@@ -356,12 +356,23 @@ def analyze_variants_streaming(filepath: str, max_docs: int = None,
             for variants in clusters_with_variants.values()
         )
         
-        # Top clusters avec le plus de variantes
+        # Top clusters avec le plus de variantes (pour affichage seulement)
         top_clusters = sorted(
             clusters_with_variants.items(),
             key=lambda x: (len(x[1]), sum(freq for _, freq in x[1])),
             reverse=True
         )[:20]
+        
+        # Tous les clusters pour la normalisation (pas seulement les top 20)
+        all_clusters_for_normalization = [
+            {
+                'canonical': canonical,
+                'variants': [{'text': text, 'freq': freq} for text, freq in variants],
+                'num_variants': len(variants),
+                'total_freq': sum(freq for _, freq in variants)
+            }
+            for canonical, variants in clusters_with_variants.items()
+        ]
         
         variant_stats[label] = {
             'total_occurrences': total_entities,
@@ -371,6 +382,9 @@ def analyze_variants_streaming(filepath: str, max_docs: int = None,
             'occurrences_affected_by_variants': total_freq_in_variants,
             'noise_ratio': round(entities_in_variants / total_unique * 100, 2) if total_unique > 0 else 0,
             'noise_ratio_by_frequency': round(total_freq_in_variants / total_entities * 100, 2) if total_entities > 0 else 0,
+            # Tous les clusters pour la normalisation
+            'all_variant_clusters': all_clusters_for_normalization,
+            # Top 20 clusters pour affichage/visualisation
             'top_variant_clusters': [
                 {
                     'canonical': canonical,

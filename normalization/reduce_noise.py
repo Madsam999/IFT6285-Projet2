@@ -26,7 +26,9 @@ def load_variant_mapping(variant_analysis_file: str) -> dict:
     mapping = {}
     
     for label, stats in variant_stats['variant_stats_by_type'].items():
-        for cluster in stats['top_variant_clusters']:
+        # Utiliser 'all_variant_clusters' si disponible (tous les clusters), sinon 'top_variant_clusters' (rétrocompatibilité)
+        clusters_to_use = stats.get('all_variant_clusters', stats.get('top_variant_clusters', []))
+        for cluster in clusters_to_use:
             canonical = cluster['canonical']
             for variant in cluster['variants']:
                 variant_text = variant['text']
@@ -134,10 +136,6 @@ def main():
         print(f"Erreur: Le fichier {args.input} n'existe pas.")
         print("Veuillez d'abord exécuter extraction/extract_entities.py")
         return
-    
-    print("="*80)
-    print("ÉTAPE 3: RÉDUCTION DU BRUIT")
-    print("="*80)
     
     normalize_entities(
         args.input,

@@ -37,9 +37,6 @@ def main():
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     
     # Chargement des ressources
-    print("="*80)
-    print("ÉTAPE 1: EXTRACTION DES ENTITÉS NER")
-    print("="*80)
     print(f"Chargement du dataset: {args.dataset}...")
     
     try:
